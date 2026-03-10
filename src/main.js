@@ -1,20 +1,18 @@
+import { MainMenu } from './scenes/MainMenu.js';
 import { Start } from './scenes/Start.js';
 
 const config = {
     type: Phaser.AUTO,
-    title: 'Power Pamplona Mobile',
     parent: 'game-container',
     width: 1280,
     height: 720,
-    backgroundColor: '#87CEEB',
+    scene: [MainMenu, Start], // El orden importa: la primera es la que arranca
     physics: {
         default: 'arcade',
         arcade: {
-            gravity: { y: 1200 },
-            debug: false
+            gravity: { y: 1200 }
         }
     },
-    scene: [Start],
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
