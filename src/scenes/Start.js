@@ -42,13 +42,14 @@ export class Start extends Phaser.Scene {
         this.load.spritesheet('dying',   'assets/Dying_KG_1.png',     FS);
         this.load.spritesheet('shield',  'assets/Shield_idle_KG.png', FS);
 
-        // --- ESQUELETO ENEMIGO (frameWidth varía por animación, frameHeight=64) ---
-        this.load.spritesheet('sk_idle',    'assets/Skeleton_01_White_Idle.png',    { frameWidth: 64, frameHeight: 64 }); // 12 frames
-        this.load.spritesheet('sk_walk',    'assets/Skeleton_01_White_Walk.png',    { frameWidth: 64, frameHeight: 64 }); // 15 frames
-        this.load.spritesheet('sk_attack1', 'assets/Skeleton_01_White_Attack1.png', { frameWidth: 64, frameHeight: 64 }); // 15 frames
-        this.load.spritesheet('sk_attack2', 'assets/Skeleton_01_White_Attack2.png', { frameWidth: 72, frameHeight: 64 }); // 12 frames
-        this.load.spritesheet('sk_hurt',    'assets/Skeleton_01_White_Hurt.png',    { frameWidth: 60, frameHeight: 64 }); //  8 frames
-        this.load.spritesheet('sk_die',     'assets/Skeleton_01_White_Die.png',     { frameWidth: 78, frameHeight: 64 }); // 16 frames
+        // --- ESQUELETO ENEMIGO (frameWidth=96, frameHeight=64 — todos iguales) ---
+        const SKS = { frameWidth: 96, frameHeight: 64 };
+        this.load.spritesheet('sk_idle',    'assets/Skeleton_01_White_Idle.png',    SKS); //  8 frames
+        this.load.spritesheet('sk_walk',    'assets/Skeleton_01_White_Walk.png',    SKS); // 10 frames
+        this.load.spritesheet('sk_attack1', 'assets/Skeleton_01_White_Attack1.png', SKS); // 10 frames
+        this.load.spritesheet('sk_attack2', 'assets/Skeleton_01_White_Attack2.png', SKS); //  9 frames
+        this.load.spritesheet('sk_hurt',    'assets/Skeleton_01_White_Hurt.png',    SKS); //  5 frames
+        this.load.spritesheet('sk_die',     'assets/Skeleton_01_White_Die.png',     SKS); // 13 frames
 
         // --- OBJETOS ---
         this.load.image('toro',   'assets/apple.png');
@@ -145,12 +146,12 @@ export class Start extends Phaser.Scene {
         addAnim('anim_shield',  'shield',  4,  6,  -1);
 
         // ── Animaciones del esqueleto ──────────────────────────────
-        addAnim('sk_anim_idle',    'sk_idle',    12, 8,  -1);
-        addAnim('sk_anim_walk',    'sk_walk',    15, 10, -1);
-        addAnim('sk_anim_attack1', 'sk_attack1', 15, 14,  0);
-        addAnim('sk_anim_attack2', 'sk_attack2', 12, 14,  0);
-        addAnim('sk_anim_hurt',    'sk_hurt',     8, 12,  0);
-        addAnim('sk_anim_die',     'sk_die',     16, 10,  0);
+        addAnim('sk_anim_idle',    'sk_idle',     8, 8,  -1);
+        addAnim('sk_anim_walk',    'sk_walk',    10, 10, -1);
+        addAnim('sk_anim_attack1', 'sk_attack1', 10, 14,  0);
+        addAnim('sk_anim_attack2', 'sk_attack2',  9, 14,  0);
+        addAnim('sk_anim_hurt',    'sk_hurt',     5, 12,  0);
+        addAnim('sk_anim_die',     'sk_die',     13, 10,  0);
 
         // ── FÍSICA ────────────────────────────────────────────────
         this.platforms  = this.physics.add.staticGroup();
@@ -186,7 +187,7 @@ export class Start extends Phaser.Scene {
         this.physics.add.collider(this.player, this.platforms);
         this.physics.add.collider(this.enemy,  this.platforms);
         this.physics.add.overlap(this.player, this.bullets, (p, b) => this.takeDamage(b));
-        this.physics.add.overlap(this.player, this.enemies, (p, e) => this.takeDamage(null));
+        this.physics.add.overlap(this.player, this.enemies, (p, e) => { if (!e.isDying) this.takeDamage(null); });
         this.physics.add.overlap(this.player, this.enemy,   ()     => this.takeDamage(null));
 
         // ── HUD ───────────────────────────────────────────────────
@@ -260,9 +261,9 @@ export class Start extends Phaser.Scene {
                 // Enemigo soldado sobre la plataforma
                 let e = this.enemies.create(midX, y - 48, 'sk_idle', 0).setScale(2).setFlipX(true).setImmovable(true);
                 e.body.allowGravity = false;
-                e.body.setSize(30, 54);
-                e.body.setOffset(17, 8);
-                e.hp          = 3;
+                e.body.setSize(36, 90);
+                e.body.setOffset(78, 34);  // centrado en frame 96*2=192px
+                e.hp          = 1;
                 e.lastFired   = 0;
                 e.alturaDisparo = y - 48;
                 e.isDying     = false;
@@ -286,9 +287,9 @@ export class Start extends Phaser.Scene {
                 // Enemigo a nivel de suelo
                 let e = this.enemies.create(px, groundY - 48, 'sk_idle', 0).setScale(2).setFlipX(true).setImmovable(true);
                 e.body.allowGravity = false;
-                e.body.setSize(30, 54);
-                e.body.setOffset(17, 8);
-                e.hp          = 3;
+                e.body.setSize(36, 90);
+                e.body.setOffset(78, 34);  // centrado en frame 96*2=192px
+                e.hp          = 1;
                 e.lastFired   = 0;
                 e.alturaDisparo = groundY - 48;
                 e.isDying     = false;
@@ -334,10 +335,12 @@ export class Start extends Phaser.Scene {
     // ─────────────────────────────────────────────
     crearBotonesMobil() {
         const { width, height } = this.scale;
-        const btnSize = 70;
-        const margin  = 18;
-        const startX  = width  - btnSize / 2 - margin;
-        const startY  = height - btnSize / 2 - margin;
+        // Botones adaptativos: más grandes en pantallas pequeñas (móvil)
+        const isMobile = width < 900 || ('ontouchstart' in window);
+        const btnSize  = isMobile ? 110 : 80;
+        const margin   = isMobile ? 28  : 20;
+        const startX   = width  - btnSize / 2 - margin;
+        const startY   = height - btnSize / 2 - margin;
 
         const botones = [
             { key: 'atacar',  label: 'ATK', icon: '⚔️', color: 0xc0392b, y: startY - (btnSize + margin) * 2 },
@@ -361,10 +364,12 @@ export class Start extends Phaser.Scene {
             };
             drawBtn(false);
 
-            const iconText = this.add.text(x, y - 10, icon, { fontSize: '26px' })
+            const iconSize  = isMobile ? '36px' : '28px';
+            const labelSize = isMobile ? '16px' : '13px';
+            const iconText = this.add.text(x, y - 14, icon, { fontSize: iconSize })
                 .setOrigin(0.5).setScrollFactor(0).setDepth(depth + 1);
-            this.add.text(x, y + 18, label, {
-                fontSize: '13px', fontFamily: 'monospace',
+            this.add.text(x, y + (isMobile ? 26 : 20), label, {
+                fontSize: labelSize, fontFamily: 'monospace',
                 fill: '#ffffff', stroke: '#000000', strokeThickness: 3, fontStyle: 'bold'
             }).setOrigin(0.5).setScrollFactor(0).setDepth(depth + 1);
 
@@ -377,7 +382,7 @@ export class Start extends Phaser.Scene {
         });
 
         this.add.text(margin, height - margin, '↑ Toca pantalla para saltar', {
-            fontSize: '14px', fontFamily: 'monospace',
+            fontSize: isMobile ? '18px' : '14px', fontFamily: 'monospace',
             fill: '#ffffff', stroke: '#000000', strokeThickness: 3
         }).setOrigin(0, 1).setScrollFactor(0).setDepth(10).setAlpha(0.7);
     }
@@ -515,7 +520,7 @@ export class Start extends Phaser.Scene {
     dañarEnemigo(enemigo) {
         if (!enemigo || !enemigo.active || enemigo.isDying) return;
 
-        if (enemigo.hp === undefined) enemigo.hp = 3;
+        if (enemigo.hp === undefined) enemigo.hp = 1;
         enemigo.hp--;
 
         if (enemigo.hp <= 0) {
