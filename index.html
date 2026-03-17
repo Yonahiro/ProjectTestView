@@ -36,14 +36,123 @@
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════
+//  ESCENA: Preloader — carga todos los assets con barra de progreso
+// ═══════════════════════════════════════════════════════════════
+class Preloader extends Phaser.Scene {
+    constructor() { super('Preloader'); }
+
+    preload() {
+        const W = 1280, H = 720;
+
+        // ── Fondo oscuro ─────────────────────────────────────────
+        this.add.rectangle(W/2, H/2, W, H, 0x0a0a0a);
+
+        // ── Título ───────────────────────────────────────────────
+        this.add.text(W/2, H/2 - 120, 'FANTASY RUN', {
+            fontSize: '64px', fill: '#f1c40f',
+            fontStyle: 'bold', stroke: '#4a235a', strokeThickness: 8
+        }).setOrigin(0.5);
+
+        // ── Barra de progreso ─────────────────────────────────────
+        const barW = 500, barH = 28, barX = W/2 - barW/2, barY = H/2;
+
+        // Marco
+        this.add.rectangle(W/2, barY + barH/2, barW + 6, barH + 6, 0x333333);
+        // Fondo barra
+        this.add.rectangle(W/2, barY + barH/2, barW, barH, 0x1a1a1a);
+        // Barra relleno (empieza en 0)
+        const bar = this.add.rectangle(barX, barY, 0, barH, 0xf1c40f).setOrigin(0, 0);
+        // Brillo superior
+        this.add.rectangle(barX, barY + 4, barW, 6, 0xfff0a0, 0.25).setOrigin(0, 0);
+
+        // Texto porcentaje
+        const pctText = this.add.text(W/2, barY + barH + 18, '0%', {
+            fontSize: '20px', fill: '#aaa', fontFamily: 'monospace'
+        }).setOrigin(0.5, 0);
+
+        // Texto "Cargando..."
+        const loadText = this.add.text(W/2, barY - 32, 'Cargando assets...', {
+            fontSize: '22px', fill: '#888', fontFamily: 'monospace'
+        }).setOrigin(0.5);
+
+        // Animación de puntos suspensivos
+        let dots = 0;
+        this.time.addEvent({
+            delay: 400, loop: true,
+            callback: () => {
+                dots = (dots + 1) % 4;
+                loadText.setText('Cargando' + '.'.repeat(dots));
+            }
+        });
+
+        // ── Eventos de carga ──────────────────────────────────────
+        this.load.on('progress', (value) => {
+            bar.width = barW * value;
+            pctText.setText(Math.floor(value * 100) + '%');
+        });
+
+        this.load.on('complete', () => {
+            pctText.setText('100%');
+            bar.width = barW;
+            // Pequeña pausa antes de ir al menú
+            this.time.delayedCall(300, () => this.scene.start('MainMenu'));
+        });
+
+        // ── Cargar TODOS los assets del juego aquí ────────────────
+        const FS  = { frameWidth: 100, frameHeight: 64 };
+        const SKS = { frameWidth: 96,  frameHeight: 64 };
+
+        // Fondos
+        this.load.image('menu_bg',  'assets/sky.png');
+        this.load.image('layer10',  'assets/10_Sky.png');
+        this.load.image('layer09',  'assets/09_Forest.png');
+        this.load.image('layer08',  'assets/08_Forest.png');
+        this.load.image('layer07',  'assets/07_Forest.png');
+        this.load.image('layer06',  'assets/06_Forest.png');
+        this.load.image('layer04',  'assets/04_Forest.png');
+        this.load.image('layer02',  'assets/02_Bushes.png');
+        this.load.image('layer01',  'assets/01_Mist.png');
+        this.load.image('tileset',  'assets/oak_woods_tileset.png');
+        this.load.image('ground_tile', 'assets/ground_parallax_tile.png');
+
+        // Personaje principal
+        this.load.spritesheet('walk',    'assets/Walking_KG_1.png',   FS);
+        this.load.spritesheet('idle',    'assets/Idle_KG_1.png',      FS);
+        this.load.spritesheet('jump',    'assets/Jump_KG_1.png',      FS);
+        this.load.spritesheet('attack1', 'assets/Attack_KG_1.png',    FS);
+        this.load.spritesheet('attack2', 'assets/Attack_KG_2.png',    FS);
+        this.load.spritesheet('attack3', 'assets/Attack_KG_3.png',    FS);
+        this.load.spritesheet('attack4', 'assets/Attack_KG_4.png',    FS);
+        this.load.spritesheet('roll',    'assets/Rolling_KG_1.png',   FS);
+        this.load.spritesheet('hurt',    'assets/Hurt_KG_1.png',      FS);
+        this.load.spritesheet('dying',   'assets/Dying_KG_1.png',     FS);
+        this.load.spritesheet('shield',  'assets/Shield_idle_KG.png', FS);
+
+        // Esqueletos
+        this.load.spritesheet('sk_idle',    'assets/Skeleton_01_White_Idle.png',    SKS);
+        this.load.spritesheet('sk_walk',    'assets/Skeleton_01_White_Walk.png',    SKS);
+        this.load.spritesheet('sk_attack1', 'assets/Skeleton_01_White_Attack1.png', SKS);
+        this.load.spritesheet('sk_attack2', 'assets/Skeleton_01_White_Attack2.png', SKS);
+        this.load.spritesheet('sk_hurt',    'assets/Skeleton_01_White_Hurt.png',    SKS);
+        this.load.spritesheet('sk_die',     'assets/Skeleton_01_White_Die.png',     SKS);
+
+        // Objetos
+        this.load.image('toro',   'assets/apple.png');
+        this.load.image('bala',   'assets/bullet7.png');
+        this.load.image('valla',  'assets/gem.png');
+        this.load.image('pajaro', 'assets/clown.png');
+    }
+
+    create() {
+        // No hacer nada — el evento 'complete' ya navega a MainMenu
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
 //  ESCENA: MainMenu
 // ═══════════════════════════════════════════════════════════════
 class MainMenu extends Phaser.Scene {
     constructor() { super('MainMenu'); }
-
-    preload() {
-        this.load.image('menu_bg', 'assets/sky.png');
-    }
 
     create() {
         this.add.image(640, 360, 'menu_bg').setAlpha(0.6).setTint(0x9b59b6);
@@ -89,44 +198,6 @@ const TS         = TILE_SIZE * TILE_SCALE; // 72px
 
 class Start extends Phaser.Scene {
     constructor() { super('Start'); }
-
-    preload() {
-        this.load.image('layer10', 'assets/10_Sky.png');
-        this.load.image('layer09', 'assets/09_Forest.png');
-        this.load.image('layer08', 'assets/08_Forest.png');
-        this.load.image('layer07', 'assets/07_Forest.png');
-        this.load.image('layer06', 'assets/06_Forest.png');
-        this.load.image('layer04', 'assets/04_Forest.png');
-        this.load.image('layer02', 'assets/02_Bushes.png');
-        this.load.image('layer01', 'assets/01_Mist.png');
-        this.load.image('tileset', 'assets/oak_woods_tileset.png');
-        this.load.image('ground_tile', 'assets/ground_parallax_tile.png');
-
-        this.load.spritesheet('walk',    'assets/Walking_KG_1.png',   FS);
-        this.load.spritesheet('idle',    'assets/Idle_KG_1.png',      FS);
-        this.load.spritesheet('jump',    'assets/Jump_KG_1.png',      FS);
-        this.load.spritesheet('attack1', 'assets/Attack_KG_1.png',    FS);
-        this.load.spritesheet('attack2', 'assets/Attack_KG_2.png',    FS);
-        this.load.spritesheet('attack3', 'assets/Attack_KG_3.png',    FS);
-        this.load.spritesheet('attack4', 'assets/Attack_KG_4.png',    FS);
-        this.load.spritesheet('roll',    'assets/Rolling_KG_1.png',   FS);
-        this.load.spritesheet('hurt',    'assets/Hurt_KG_1.png',      FS);
-        this.load.spritesheet('dying',   'assets/Dying_KG_1.png',     FS);
-        this.load.spritesheet('shield',  'assets/Shield_idle_KG.png', FS);
-
-        const SKS = { frameWidth: 96, frameHeight: 64 };
-        this.load.spritesheet('sk_idle',    'assets/Skeleton_01_White_Idle.png',    SKS);
-        this.load.spritesheet('sk_walk',    'assets/Skeleton_01_White_Walk.png',    SKS);
-        this.load.spritesheet('sk_attack1', 'assets/Skeleton_01_White_Attack1.png', SKS);
-        this.load.spritesheet('sk_attack2', 'assets/Skeleton_01_White_Attack2.png', SKS);
-        this.load.spritesheet('sk_hurt',    'assets/Skeleton_01_White_Hurt.png',    SKS);
-        this.load.spritesheet('sk_die',     'assets/Skeleton_01_White_Die.png',     SKS);
-
-        this.load.image('toro',   'assets/apple.png');
-        this.load.image('bala',   'assets/bullet7.png');
-        this.load.image('valla',  'assets/gem.png');
-        this.load.image('pajaro', 'assets/clown.png');
-    }
 
     addTileTexture(key, col, row) {
         if (this.textures.exists(key)) return;
@@ -538,7 +609,7 @@ new Phaser.Game({
     parent: 'game-container',
     width:  1280,
     height: 720,
-    scene: [MainMenu, Start],
+    scene: [Preloader, MainMenu, Start],
     physics: {
         default: 'arcade',
         arcade: { gravity: { y: 1200 }, debug: false }
