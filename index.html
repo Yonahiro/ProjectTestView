@@ -218,7 +218,7 @@ class Start extends Phaser.Scene {
         this.isBlocking   = false;
         this.attackCycle  = 0;
         this.distanciaMeta = 6000;
-        this.touch            = { atacar: false, defensa: false, rodar: false };
+        this.touch            = { atacar: false, defensa: false, rodar: false, onButton: false };
         this.lastAttackTime   = -1000;
         this.ATTACK_COOLDOWN  = 500;
         this.isAttacking      = false;
@@ -438,9 +438,9 @@ class Start extends Phaser.Scene {
             const zone = this.add.zone(x, y, btnSize, btnSize)
                 .setScrollFactor(0).setDepth(depth + 2).setInteractive();
 
-            zone.on('pointerdown', () => { this.touch[key] = true;  drawBtn(true);  iconText.setAlpha(0.7); });
-            zone.on('pointerup',   () => { this.touch[key] = false; drawBtn(false); iconText.setAlpha(1);   });
-            zone.on('pointerout',  () => { this.touch[key] = false; drawBtn(false); iconText.setAlpha(1);   });
+            zone.on('pointerdown', () => { this.touch[key] = true;  this.touch.onButton = true;  drawBtn(true);  iconText.setAlpha(0.7); });
+            zone.on('pointerup',   () => { this.touch[key] = false; this.touch.onButton = false; drawBtn(false); iconText.setAlpha(1);   });
+            zone.on('pointerout',  () => { this.touch[key] = false; this.touch.onButton = false; drawBtn(false); iconText.setAlpha(1);   });
         });
 
         this.add.text(margin, height - margin, '↑ Toca pantalla para saltar', {
@@ -521,7 +521,7 @@ class Start extends Phaser.Scene {
         this.player.setVelocityX(speed);
         this.enemy.setVelocityX(345);
 
-        if ((this.cursors.up.isDown || this.input.activePointer.isDown) && this.player.body.touching.down) {
+        if ((this.cursors.up.isDown || (this.input.activePointer.isDown && !this.touch.onButton)) && this.player.body.touching.down) {
             this.player.setVelocityY(-650);
         }
 
